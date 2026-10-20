@@ -1,0 +1,169 @@
+
+/*
+	SELECT
+	DISTINCT
+	TOP
+	FROM
+	JOIN
+	WHERE
+	GROUP BY
+	HAVING
+	ORDER BY
+*/
+
+
+-- CHAPTER 02
+
+-- ============= SELECT CLAUSE
+
+SELECT *	-- 2. NEXT STEP SQL CHECK THE SELECT STATEMENT, SO WHICH COLUMNS WE HAVE TO KEEP IN THE RESULTS.
+FROM MYDATABASE.DBO.CUSTOMERS		-- 1. EXECUTE FIRST: GO AND RETRIEVE ALL THE DATA FROM DATABASE. 
+
+
+SELECT -- (2)
+	FIRST_NAME,
+	COUNTRY,
+	SCORE
+FROM MYDATABASE.DBO.CUSTOMERS; -- PICK ONLY NEED THE COLUMNS YOU NEED INSTEAD OF ALL   (1)
+
+-- **************************************************************************************************************************************
+
+
+-- ============= WHERE CLASUE - IN ORDER TO FILTER YOUR DATA
+
+-- RETRIEVE CUSTOMERS WITH SCORE NOT EQUAL TO 0
+
+SELECT *	-- (3)
+FROM MYDATABASE.DBO.CUSTOMERS	-- (1)
+WHERE SCORE != 0;	-- (2)
+
+-- RETRIEVE CUSTOMERS FROM GERMANY
+
+SELECT *	-- (3)
+FROM MYDATABASE.DBO.CUSTOMERS -- (1)
+WHERE COUNTRY = 'GERMANY';	-- (2)
+
+-- **************************************************************************************************************************************
+
+-- ============= ORDER BY CLAUS
+
+-- RETRIEVE ALL CUSTOMERS AND SORT THE RESULTS BY THE HIGHEST SCORE FIRST
+
+SELECT *	-- (3)
+FROM MYDATABASE.DBO.CUSTOMERS	-- (1)
+ORDER BY SCORE DESC;	-- (2)
+
+-- RETIREVE ALL THE CUSTOMERS AND SORT THE RESULTS BY COURTRY AND THEN BY HIGHEST SCORE
+
+SELECT * 
+FROM MYDATABASE.DBO.CUSTOMERS
+ORDER BY COUNTRY ASC, SCORE DESC;
+
+-- **************************************************************************************************************************************
+
+-- ============= GROUP BY CLAUS
+	-- COMBINE ROWS WITH SAME VALUES, AGGREGATES COLUMN BY ANOTHER COLUMN
+
+-- FIND THE TOTAL SCORE FOR EACH COUNTRY
+
+SELECT	-- (3)
+	COUNTRY,
+	SUM(SCORE) AS TOTAL_SCORE
+FROM MYDATABASE.DBO.CUSTOMERS	-- (1)
+GROUP BY COUNTRY;	-- (2)
+
+-- FIND THE TOTAL SCORE AND TOTAL NUMBER OF CUSTOEMRS FOR EACH COUNTRY
+
+SELECT 
+	COUNTRY,
+	SUM(SCORE) AS TOTAL_SCORE,
+	COUNT(ID) AS TOTAL_CUSTOMER
+FROM MYDATABASE.DBO.CUSTOMERS
+GROUP BY COUNTRY;
+
+
+-- **************************************************************************************************************************************
+
+-- ============= HAVING CLAUSE
+	-- FILTER AGGREGIATED DATA (FILTER DATA AFTER AGGREGIATION)
+/*
+	FILTERING DATA
+		BEFORE AGGREGIATION --> WHERE
+		AFTER AGGREGIATION -- HAVING
+*/
+
+
+-- FIND THE AVERAGE SCORE FOR EACH COUNTRY CONSIDERING ONLY CUSTOMERS WITH A SCORE NOT EQUAL TO 0, AND ONLY RETURN THOSE COUNTRIES WITH AN AVERAGE 
+-- SCORE GREATER THAN 430.
+
+SELECT		-- (5)
+	COUNTRY,
+	AVG(SCORE) AVG_SCORE
+FROM MYDATABASE.DBO.CUSTOMERS	-- (1)
+WHERE SCORE != 0	-- (2)
+GROUP BY COUNTRY	-- (3)
+HAVING AVG(SCORE) > 430;	-- (4)
+
+
+-- **************************************************************************************************************************************
+
+-- ============= DISTINCT KEYWORD
+	-- DON'T USE DISTINCT UNLESS IT IS NECESSARY, IT CAN SLOW DOWN YOUR QUERY
+-- RETURN UNIQUE LIST OF ALL COUNTRIES
+
+SELECT	-- (3)
+	DISTINCT COUNTRY	-- (2)
+FROM MYDATABASE.DBO.CUSTOMERS;	-- (1)
+
+
+
+-- **************************************************************************************************************************************
+
+-- ============= TOP KEYWORD
+	-- LIMIT YOUR DATA
+
+-- RETRIEVE ONLY 3 CUSTOMERS
+
+SELECT		-- (3)
+	TOP 3 *		-- (2)
+FROM MyDatabase.DBO.customers;	-- (1)
+
+-- RETRIEVE THE TOP 3 CUSTOEMRS WITH HIGHEST SCORE
+
+SELECT
+	TOP 3 *
+FROM MyDatabase.DBO.customers
+ORDER BY SCORE DESC;
+
+-- GET THE TWO MOST RECENT ORDERS
+
+SELECT 
+	TOP 2 *
+FROM MYDATABASE.DBO.ORDERS
+ORDER BY ORDER_DATE DESC;
+
+
+-- **************************************************************************************************************************************
+
+-- EXECUATION ORDER VS CODING ORDER
+/*
+
+CODING ORDER														EXECUATION ORDER
+SELECT DISTINCT TOP 2	(5)	, (7)									1. FROM
+COL1,																2. WHERE
+SUM(COL2),															3. GROUP BY
+FROM TABLE		(1)													4. HAVING 
+WHERE CONDITION		(2)												5. SELECT DISTINCT
+GROUP BY COL1	(3)													6. ORDER BY
+HAVING SUM(COL2) > 1	(4)											7. TOP
+ORDER BY COL1 DESC	(6)
+
+IN THIS QUERY FILTERS ARE
+SELECT(FILTERING COLUMNS - HOW MANY COLUMNS NEEDED)
+DISTINCT (FILTERING DUPLICATES)
+TOP (FILTERING RESULTS)
+WHERE(FILTERING ROWS BEFORE AGGREGIATION)
+HAVING(FILTERING ROWS AFTER AGGREGIATION)
+	
+*/
+
