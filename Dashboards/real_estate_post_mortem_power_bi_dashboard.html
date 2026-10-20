@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PropPulse PK - Real Estate Post-Mortem Power BI Dashboard</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            500: '#10b981',
+                            600: '#059669',
+                            900: '#064e3b',
+                            dark: '#0f172a',
+                            card: '#1e293b',
+                            border: '#334155'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Chart.js for Power BI style visualizations -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.75);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(51, 65, 85, 0.6);
+        }
+        .powerbi-card {
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.95) 100%);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+        }
+    </style>
+</head>
+<body class="bg-[#0b0f19] text-slate-100 min-h-screen flex flex-col selection:bg-emerald-500 selection:text-white">
+
+    <header class="border-b border-slate-800 bg-[#0f172a]/90 backdrop-blur sticky top-0 z-50 px-6 py-3.5 flex flex-col lg:flex-row justify-between items-center gap-4">
+        <div class="flex items-center space-x-3">
+            <div class="h-10 w-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center shadow-lg shadow-emerald-500/20">
+                <i class="fa-solid fa-chart-pie text-slate-950 text-lg"></i>
+            </div>
+            <div>
+                <h1 class="text-xl font-extrabold bg-gradient-to-r from-white via-slate-200 to-emerald-400 bg-clip-text text-transparent tracking-tight">
+                    PropPulse PK <span class="text-[10px] uppercase px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-semibold border border-emerald-500/30">Power BI Post-Mortem Canvas</span>
+                </h1>
+                <p class="text-[11px] text-slate-400">Multi-Portal Scraper Intelligence (Zameen • Graana • Property.pk • Ilan)</p>
+            </div>
+        </div>
+
+        <!-- Power BI Style Slicers / Filters Bar -->
+        <div class="flex flex-wrap items-center gap-2.5">
+            <div class="flex items-center space-x-2 bg-slate-900/90 border border-slate-800 rounded-lg px-3 py-1.5 text-xs shadow-inner">
+                <span class="text-slate-400"><i class="fa-solid fa-globe mr-1 text-emerald-400"></i> Source:</span>
+                <select id="filterSource" onchange="applyFilters()" class="bg-transparent text-emerald-400 font-semibold focus:outline-none cursor-pointer">
+                    <option value="ALL">All Portals</option>
+                    <option value="Zameen">Zameen.com</option>
+                    <option value="Graana">Graana</option>
+                    <option value="Property.pk">Property.pk (Online)</option>
+                    <option value="Ilan">Ilan</option>
+                </select>
+            </div>
+
+            <div class="flex items-center space-x-2 bg-slate-900/90 border border-slate-800 rounded-lg px-3 py-1.5 text-xs shadow-inner">
+                <span class="text-slate-400"><i class="fa-solid fa-city mr-1 text-teal-400"></i> City:</span>
+                <select id="filterCity" onchange="applyFilters()" class="bg-transparent text-teal-400 font-semibold focus:outline-none cursor-pointer">
+                    <option value="ALL">All Cities</option>
+                    <option value="Lahore">Lahore</option>
+                    <option value="Islamabad">Islamabad</option>
+                    <option value="Karachi">Karachi</option>
+                    <option value="Rawalpindi">Rawalpindi</option>
+                    <option value="Peshawar">Peshawar</option>
+                </select>
+            </div>
+
+            <div class="flex items-center space-x-2 bg-slate-900/90 border border-slate-800 rounded-lg px-3 py-1.5 text-xs shadow-inner">
+                <span class="text-slate-400"><i class="fa-solid fa-tags mr-1 text-cyan-400"></i> Purpose:</span>
+                <select id="filterPurpose" onchange="applyFilters()" class="bg-transparent text-cyan-400 font-semibold focus:outline-none cursor-pointer">
+                    <option value="ALL">Sale & Rent</option>
+                    <option value="sale">For Sale</option>
+                    <option value="rent">For Rent</option>
+                </select>
+            </div>
+
+            <div class="flex items-center space-x-2 bg-slate-900/90 border border-slate-800 rounded-lg px-3 py-1.5 text-xs shadow-inner">
+                <span class="text-slate-400"><i class="fa-solid fa-layer-group mr-1 text-indigo-400"></i> Category:</span>
+                <select id="filterCategory" onchange="applyFilters()" class="bg-transparent text-indigo-400 font-semibold focus:outline-none cursor-pointer">
+                    <option value="ALL">All Categories</option>
+                    <option value="Residential">Residential</option>
+                    <option value="Commercial">Commercial</option>
+                    <option value="Plot">Plot</option>
+                </select>
+            </div>
+
+            <button onclick="openDAXModal()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-lg shadow-emerald-600/30">
+                <i class="fa-solid fa-code"></i> Power BI DAX Blueprint
+            </button>
+
+            <button onclick="resetFilters()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center gap-1">
+                <i class="fa-solid fa-rotate-right"></i> Reset
+            </button>
+        </div>
+    </header>
+
+    <main class="flex-1 p-6 space-y-6 max-w-[1700px] w-full mx-auto">
+        <!-- Power BI KPI Cards Row -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            <div class="powerbi-card p-4 rounded-2xl border-l-4 border-l-emerald-500">
+                <p class="text-[11px] text-slate-400 font-bold uppercase tracking-wider">Total Scraped Listings</p>
+                <div class="flex items-baseline justify-between mt-2">
+                    <h3 id="kpiTotalListings" class="text-2xl font-black text-white">12,480</h3>
+                    <span class="text-emerald-400 text-xs font-bold bg-emerald-500/10 px-2 py-0.5 rounded flex items-center gap-1"><i class="fa-solid fa-arrow-trend-up"></i> +14.2%</span>
+                </div>
+                <p class="text-[10px] text-slate-500 mt-1">DAX: <code class="text-emerald-400">COUNTROWS(Listings)</code></p>
+            </div>
+
+            <div class="powerbi-card p-4 rounded-2xl border-l-4 border-l-teal-500">
+                <p class="text-[11px] text-slate-400 font-bold uppercase tracking-wider">Average Asking Price</p>
+                <div class="flex items-baseline justify-between mt-2">
+                    <h3 id="kpiAvgPrice" class="text-2xl font-black text-white">PKR 3.42 Cr</h3>
+                    <span class="text-teal-400 text-xs font-bold bg-teal-500/10 px-2 py-0.5 rounded">Median: 2.15 Cr</span>
+                </div>
+                <p class="text-[10px] text-slate-500 mt-1">DAX: <code class="text-teal-400">AVERAGE(Price)</code></p>
+            </div>
+
+            <div class="powerbi-card p-4 rounded-2xl border-l-4 border-l-cyan-500">
+                <p class="text-[11px] text-slate-400 font-bold uppercase tracking-wider">Avg Price per Marla</p>
+                <div class="flex items-baseline justify-between mt-2">
+                    <h3 id="kpiPricePerMarla" class="text-2xl font-black text-white">PKR 14.8 Lac</h3>
+                    <span class="text-cyan-400 text-xs font-bold bg-cyan-500/10 px-2 py-0.5 rounded">High ROI Zone</span>
+                </div>
+                <p class="text-[10px] text-slate-500 mt-1">DAX: <code class="text-cyan-400">DIVIDE(Price, MarlaConv)</code></p>
+            </div>
+
+            <div class="powerbi-card p-4 rounded-2xl border-l-4 border-l-indigo-500">
+                <p class="text-[11px] text-slate-400 font-bold uppercase tracking-wider">Dominant Category</p>
+                <div class="flex items-baseline justify-between mt-2">
+                    <h3 id="kpiDominantCat" class="text-xl font-black text-white">Residential (68%)</h3>
+                    <span class="text-indigo-400 text-xs font-bold bg-indigo-500/10 px-2 py-0.5 rounded">Plots: 22%</span>
+                </div>
+                <p class="text-[10px] text-slate-500 mt-1">Commercial: 10% Share</p>
+            </div>
+
+            <div class="powerbi-card p-4 rounded-2xl border-l-4 border-l-amber-500">
+                <p class="text-[11px] text-slate-400 font-bold uppercase tracking-wider">Verified Boolean Index</p>
+                <div class="flex items-baseline justify-between mt-2">
+                    <h3 id="kpiAmenitiesIndex" class="text-2xl font-black text-white">74.6%</h3>
+                    <span class="text-amber-400 text-xs font-bold bg-amber-500/10 px-2 py-0.5 rounded">Gas/Water 98%</span>
+                </div>
+                <p class="text-[10px] text-slate-500 mt-1">DAX: <code class="text-amber-400">CALCULATE(TRUE/Blank)</code></p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="glass-panel p-5 rounded-2xl lg:col-span-2 flex flex-col justify-between shadow-xl">
+                <div class="flex justify-between items-center mb-4">
+                    <div>
+                        <h2 class="text-base font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-chart-column text-emerald-400"></i> Power BI Visual: Average Price by City & Property Category
+                        </h2>
+                        <p class="text-xs text-slate-400">Clustered Column Chart comparing Residential, Commercial, and Plots in PKR (Millions)</p>
+                    </div>
+                    <span class="text-xs bg-slate-800 text-emerald-400 px-2.5 py-1 rounded-lg border border-emerald-500/30 font-semibold">Active Filter Sync</span>
+                </div>
+                <div class="relative h-[310px] w-full">
+                    <canvas id="cityCategoryChart"></canvas>
+                </div>
+            </div>
+
+            <div class="glass-panel p-5 rounded-2xl flex flex-col justify-between shadow-xl">
+                <div class="flex justify-between items-center mb-4">
+                    <div>
+                        <h2 class="text-base font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-chart-pie text-teal-400"></i> Portal Scrape Share
+                        </h2>
+                        <p class="text-xs text-slate-400">Donut Chart: Zameen, Graana, Property.pk, Ilan</p>
+                    </div>
+                </div>
+                <div class="relative h-[290px] w-full flex items-center justify-center">
+                    <canvas id="portalShareChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="glass-panel p-5 rounded-2xl shadow-xl">
+                <div class="flex justify-between items-center mb-4">
+                    <div>
+                        <h2 class="text-base font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-square-check text-cyan-400"></i> Boolean Features Penetration (True vs Blank %)
+                        </h2>
+                        <p class="text-xs text-slate-400">Post-mortem analysis of scraped amenities (`gas`, `water_supply`, `cctv_camera`, `elevator`, etc.)</p>
+                    </div>
+                    <span class="text-xs text-cyan-400 bg-cyan-500/10 px-2 py-1 rounded border border-cyan-500/20">Feature Impact Index</span>
+                </div>
+                <div class="relative h-[270px] w-full">
+                    <canvas id="amenitiesChart"></canvas>
+                </div>
+            </div>
+
+            <div class="glass-panel p-5 rounded-2xl shadow-xl">
+                <div class="flex justify-between items-center mb-4">
+                    <div>
+                        <h2 class="text-base font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-building text-amber-400"></i> Built Year & Construction Era Depreciation Curve
+                        </h2>
+                        <p class="text-xs text-slate-400">Line Chart: Listing valuation vs Construction Year brackets</p>
+                    </div>
+                    <span class="text-xs text-amber-400 bg-amber-500/10 px-2 py-1 rounded border border-amber-500/20">Age Premium Post-Mortem</span>
+                </div>
+                <div class="relative h-[270px] w-full">
+                    <canvas id="builtYearChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="glass-panel p-6 rounded-2xl shadow-xl space-y-4">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                    <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-table text-emerald-400"></i> Granular Data Inspector & Scraped Record Post-Mortem
+                    </h2>
+                    <p class="text-xs text-slate-400">Inspect raw listings, boolean feature flags (True/Blank), built year, and precise sub-categories (office, shop, plaza, house).</p>
+                </div>
+                <div class="flex items-center gap-3 w-full md:w-auto">
+                    <div class="relative flex-1 md:w-64">
+                        <i class="fa-solid fa-search absolute left-3 top-2.5 text-slate-500 text-xs"></i>
+                        <input type="text" id="searchInput" onkeyup="filterTable()" placeholder="Search location, sub-category, portal..." class="w-full bg-slate-900 border border-slate-700 rounded-lg pl-9 pr-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-500">
+                    </div>
+                    <button onclick="exportCSV()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 whitespace-nowrap shadow-lg shadow-emerald-600/20">
+                        <i class="fa-solid fa-download"></i> Export CSV
+                    </button>
+                </div>
+            </div>
+
+            <!-- Table Wrapper -->
+            <div class="overflow-x-auto rounded-xl border border-slate-800">
+                <table class="w-full text-left text-xs text-slate-300">
+                    <thead class="bg-slate-900/90 text-slate-400 uppercase font-semibold border-b border-slate-800">
+                        <tr>
+                            <th class="p-3">Portal</th>
+                            <th class="p-3">City / Location</th>
+                            <th class="p-3">Purpose</th>
+                            <th class="p-3">Category / Sub-Cat</th>
+                            <th class="p-3">Price (PKR)</th>
+                            <th class="p-3">Area Unit</th>
+                            <th class="p-3">Beds / Baths</th>
+                            <th class="p-3">Built Year</th>
+                            <th class="p-3">Boolean Amenities (True Flags)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dataTableBody" class="divide-y divide-slate-800/60 bg-slate-950/40">
+                        <!-- Dynamically populated -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination info -->
+            <div class="flex justify-between items-center text-xs text-slate-400 pt-2">
+                <span id="tableCountInfo">Showing 10 of 12,480 properties</span>
+                <div class="flex items-center gap-2">
+                    <button class="px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 disabled:opacity-50">Prev</button>
+                    <span class="px-2 font-medium text-white">1 / 1,248</span>
+                    <button class="px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300">Next</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div id="daxModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-3xl w-full p-6 space-y-4 shadow-2xl relative">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                <h3 class="text-base font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-code text-emerald-400"></i> Power BI DAX & Schema Blueprint for this Dashboard
+                </h3>
+                <button onclick="closeDAXModal()" class="text-slate-400 hover:text-white text-sm"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div class="space-y-3 text-xs text-slate-300 max-h-[60vh] overflow-y-auto pr-2">
+                <div>
+                    <span class="font-bold text-emerald-400">1. Total Listings Measure</span>
+                    <pre class="bg-slate-950 p-3 rounded-lg border border-slate-800 mt-1 text-cyan-300 overflow-x-auto">Total_Listings = COUNTROWS('Scraped_Listings')</pre>
+                </div>
+                <div>
+                    <span class="font-bold text-teal-400">2. Average Price per Marla Measure</span>
+                    <pre class="bg-slate-950 p-3 rounded-lg border border-slate-800 mt-1 text-cyan-300 overflow-x-auto">Avg_Price_Per_Marla = DIVIDE(AVERAGE('Scraped_Listings'[Price]), AVERAGE('Scraped_Listings'[Marla_Equivalent]))</pre>
+                </div>
+                <div>
+                    <span class="font-bold text-cyan-400">3. Boolean Amenity True Rate (e.g. CCTV / Gas / Water)</span>
+                    <pre class="bg-slate-950 p-3 rounded-lg border border-slate-800 mt-1 text-cyan-300 overflow-x-auto">CCTV_Penetration_Rate = DIVIDE(
+    CALCULATE(COUNTROWS('Scraped_Listings'), 'Scraped_Listings'[cctv_camera] = TRUE || 'Scraped_Listings'[cctv_camera] = "True"),
+    COUNTROWS('Scraped_Listings')
+)</pre>
+                </div>
+                <div>
+                    <span class="font-bold text-amber-400">4. Theme Color Palette Codes (Power BI JSON Theme)</span>
+                    <pre class="bg-slate-950 p-3 rounded-lg border border-slate-800 mt-1 text-emerald-300 overflow-x-auto">{
+  "name": "PropPulse Dark Futuristic",
+  "dataColors": ["#10b981", "#06b6d4", "#6366f1", "#f59e0b", "#ec4899", "#8b5cf6"],
+  "background": "#0b0f19",
+  "tableAccent": "#1e293b",
+  "foreground": "#f8fafc"
+}</pre>
+                </div>
+            </div>
+            <div class="flex justify-end pt-2 border-t border-slate-800">
+                <button onclick="closeDAXModal()" class="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg text-xs font-semibold">Close Blueprint</button>
+            </div>
+        </div>
+    </div>
+
+    <footer class="border-t border-slate-800 bg-[#0f172a]/90 py-4 px-6 text-center text-xs text-slate-500">
+        <p>PropPulse PK Real Estate Intelligence Dashboard • Designed for Power BI Data Engineers • Multi-Source Scraper Post-Mortem (Zameen, Graana, Property.pk, Ilan)</p>
+    </footer>
+
+    <script>
+        // Comprehensive dataset representing scraped records from Graana, Zameen.com, Property.pk (Online), and Ilan
+        const mockDatabase = [
+            { source: 'Zameen', city: 'Lahore', purpose: 'sale', category: 'Residential', subCategory: 'House', price: 45000000, area: '10 Marla', beds: 5, baths: 6, builtYear: 2022, features: ['gas', 'water_supply', 'electricity', 'cctv_camera', 'parking', 'tv_lounge', 'kitchen'] },
+            { source: 'Graana', city: 'Islamabad', purpose: 'sale', category: 'Commercial', subCategory: 'Plaza', price: 180000000, area: '2 Kanal', beds: 0, baths: 4, builtYear: 2024, features: ['elevator', 'central_cooling', 'security', 'cctv_camera', 'electricity', 'public_parking'] },
+            { source: 'Property.pk', city: 'Karachi', purpose: 'rent', category: 'Residential', subCategory: 'Apartment', price: 120000, area: '1200 Sq. Ft.', beds: 3, baths: 3, builtYear: 2021, features: ['internet_access', 'maintenance', 'water_supply', 'elevator', 'balcony'] },
+            { source: 'Ilan', city: 'Rawalpindi', purpose: 'sale', category: 'Plot', subCategory: 'Residential Plot', price: 11500000, area: '5 Marla', beds: 0, baths: 0, builtYear: '-', features: ['boundary_wall', 'sewerage', 'electricity', 'accessing_boulevard'] },
+            { source: 'Zameen', city: 'Lahore', purpose: 'rent', category: 'Commercial', subCategory: 'Shop', price: 250000, area: '400 Sq. Ft.', beds: 0, baths: 1, builtYear: 2023, features: ['electricity', 'parking', 'security', 'nearby_restaurants'] },
+            { source: 'Graana', city: 'Peshawar', purpose: 'sale', category: 'Residential', subCategory: 'House', price: 28000000, area: '1 Kanal', beds: 6, baths: 7, builtYear: 2019, features: ['gas', 'water_supply', 'electricity', 'lawn', 'store_room', 'drawing_room'] },
+            { source: 'Zameen', city: 'Islamabad', purpose: 'sale', category: 'Residential', subCategory: 'House', price: 85000000, area: '1.5 Kanal', beds: 6, baths: 8, builtYear: 2023, features: ['central_heating', 'central_cooling', 'elevator', 'swimming_pool', 'cctv_camera', 'study_room'] },
+            { source: 'Property.pk', city: 'Lahore', purpose: 'sale', category: 'Plot', subCategory: 'Commercial Plot', price: 95000000, area: '8 Marla', beds: 0, baths: 0, builtYear: '-', features: ['accessing_boulevard', 'electricity', 'sewerage', 'underground_parking'] },
+            { source: 'Ilan', city: 'Karachi', purpose: 'rent', category: 'Commercial', subCategory: 'Office', price: 350000, area: '2000 Sq. Ft.', beds: 0, baths: 2, builtYear: 2020, features: ['elevator', 'internet_access', 'backup_generator', 'cctv_camera', 'central_cooling'] },
+            { source: 'Graana', city: 'Rawalpindi', purpose: 'sale', category: 'Residential', subCategory: 'House', price: 32000000, area: '7 Marla', beds: 4, baths: 5, builtYear: 2021, features: ['gas', 'water_supply', 'electricity', 'tv_lounge', 'dining_room', 'laundry_room'] }
+        ];
+
+        let cityCategoryChartInstance = null;
+        let portalShareChartInstance = null;
+        let amenitiesChartInstance = null;
+        let builtYearChartInstance = null;
+
+        window.addEventListener('DOMContentLoaded', () => {
+            initCharts();
+            populateTable(mockDatabase);
+        });
+
+        function initCharts() {
+            // Chart 1: City & Category Clustered Column
+            const ctx1 = document.getElementById('cityCategoryChart').getContext('2d');
+            cityCategoryChartInstance = new Chart(ctx1, {
+                type: 'bar',
+                data: {
+                    labels: ['Lahore', 'Islamabad', 'Karachi', 'Rawalpindi', 'Peshawar'],
+                    datasets: [
+                        { label: 'Residential', data: [3.8, 6.2, 4.5, 2.9, 2.5], backgroundColor: '#10b981', borderRadius: 6 },
+                        { label: 'Commercial', data: [12.5, 18.2, 15.0, 9.4, 8.1], backgroundColor: '#06b6d4', borderRadius: 6 },
+                        { label: 'Plots', data: [2.1, 3.9, 2.8, 1.8, 1.4], backgroundColor: '#6366f1', borderRadius: 6 }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { color: '#94a3b8', font: { family: 'Plus Jakarta Sans', size: 11 } } },
+                        tooltip: { backgroundColor: '#1e293b', titleColor: '#f8fafc', bodyColor: '#cbd5e1' }
+                    },
+                    scales: {
+                        x: { grid: { color: 'rgba(51, 65, 85, 0.2)' }, ticks: { color: '#94a3b8' } },
+                        y: { grid: { color: 'rgba(51, 65, 85, 0.2)' }, ticks: { color: '#94a3b8', callback: (v) => v + ' Cr' } }
+                    }
+                }
+            });
+
+            // Chart 2: Portal Share Donut
+            const ctx2 = document.getElementById('portalShareChart').getContext('2d');
+            portalShareChartInstance = new Chart(ctx2, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Zameen.com', 'Graana', 'Property.pk', 'Ilan'],
+                    datasets: [{
+                        data: [48, 28, 16, 8],
+                        backgroundColor: ['#10b981', '#06b6d4', '#6366f1', '#f59e0b'],
+                        borderWidth: 0,
+                        hoverOffset: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { color: '#94a3b8', font: { family: 'Plus Jakarta Sans', size: 11 } } }
+                    }
+                }
+            });
+
+            // Chart 3: Boolean Amenities Penetration
+            const ctx3 = document.getElementById('amenitiesChart').getContext('2d');
+            amenitiesChartInstance = new Chart(ctx3, {
+                type: 'bar',
+                data: {
+                    labels: ['Electricity', 'Water Supply', 'Gas', 'CCTV Camera', 'Parking', 'Elevator', 'Central Cooling', 'TV Lounge'],
+                    datasets: [{
+                        label: '% Listings with True Value',
+                        data: [98, 96, 89, 64, 58, 32, 24, 82],
+                        backgroundColor: '#06b6d4',
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { backgroundColor: '#1e293b', titleColor: '#f8fafc', bodyColor: '#cbd5e1' }
+                    },
+                    scales: {
+                        x: { grid: { color: 'rgba(51, 65, 85, 0.2)' }, ticks: { color: '#94a3b8', callback: (v) => v + '%' }, max: 100 },
+                        y: { grid: { display: false }, ticks: { color: '#94a3b8' } }
+                    }
+                }
+            });
+
+            // Chart 4: Built Year Age Curve
+            const ctx4 = document.getElementById('builtYearChart').getContext('2d');
+            builtYearChartInstance = new Chart(ctx4, {
+                type: 'line',
+                data: {
+                    labels: ['Pre-2010', '2010-2014', '2015-2018', '2019-2021', '2022-2024'],
+                    datasets: [{
+                        label: 'Average Price Premium (PKR Cr)',
+                        data: [1.8, 2.3, 3.1, 4.4, 5.8],
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        fill: true,
+                        tension: 0.3,
+                        pointBackgroundColor: '#10b981'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { backgroundColor: '#1e293b', titleColor: '#f8fafc', bodyColor: '#cbd5e1' }
+                    },
+                    scales: {
+                        x: { grid: { color: 'rgba(51, 65, 85, 0.2)' }, ticks: { color: '#94a3b8' } },
+                        y: { grid: { color: 'rgba(51, 65, 85, 0.2)' }, ticks: { color: '#94a3b8' } }
+                    }
+                }
+            });
+        }
+
+        function populateTable(data) {
+            const tbody = document.getElementById('dataTableBody');
+            tbody.innerHTML = '';
+            data.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-900/60 transition';
+                
+                const badgeColor = item.source === 'Zameen' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
+                                   item.source === 'Graana' ? 'bg-teal-500/10 text-teal-400 border-teal-500/20' :
+                                   item.source === 'Property.pk' ? 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20' : 'bg-amber-500/10 text-amber-400 border-amber-500/20';
+
+                const purposeBadge = item.purpose === 'sale' ? 'bg-cyan-500/10 text-cyan-400' : 'bg-purple-500/10 text-purple-400';
+
+                tr.innerHTML = `
+                    <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold border ${badgeColor}">${item.source}</span></td>
+                    <td class="p-3 font-medium text-white">${item.city}</td>
+                    <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase ${purposeBadge}">${item.purpose}</span></td>
+                    <td class="p-3">${item.category} / <span class="text-emerald-400 font-semibold">${item.subCategory}</span></td>
+                    <td class="p-3 font-bold text-emerald-400">PKR ${item.price.toLocaleString()}</td>
+                    <td class="p-3">${item.area}</td>
+                    <td class="p-3">${item.beds > 0 ? item.beds + 'B / ' + item.baths + 'B' : 'N/A'}</td>
+                    <td class="p-3">${item.builtYear}</td>
+                    <td class="p-3">
+                        <div class="flex flex-wrap gap-1">
+                            ${item.features.slice(0, 3).map(f => `<span class="bg-slate-800 text-cyan-300 text-[10px] px-1.5 py-0.5 rounded font-mono">${f}: True</span>`).join('')}
+                            ${item.features.length > 3 ? `<span class="bg-emerald-500/20 text-emerald-400 text-[10px] px-1.5 py-0.5 rounded font-semibold">+${item.features.length - 3} true flags</span>` : ''}
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+            document.getElementById('tableCountInfo').innerText = `Showing ${data.length} of 12,480 properties (Power BI Filter Active)`;
+        }
+
+        function applyFilters() {
+            const source = document.getElementById('filterSource').value;
+            const city = document.getElementById('filterCity').value;
+            const purpose = document.getElementById('filterPurpose').value;
+            const category = document.getElementById('filterCategory').value;
+
+            const filtered = mockDatabase.filter(item => {
+                if (source !== 'ALL' && item.source !== source) return false;
+                if (city !== 'ALL' && item.city !== city) return false;
+                if (purpose !== 'ALL' && item.purpose !== purpose) return false;
+                if (category !== 'ALL' && item.category !== category) return false;
+                return true;
+            });
+
+            populateTable(filtered);
+        }
+
+        function resetFilters() {
+            document.getElementById('filterSource').value = 'ALL';
+            document.getElementById('filterCity').value = 'ALL';
+            document.getElementById('filterPurpose').value = 'ALL';
+            document.getElementById('filterCategory').value = 'ALL';
+            populateTable(mockDatabase);
+        }
+
+        function filterTable() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            const filtered = mockDatabase.filter(item => 
+                item.city.toLowerCase().includes(query) ||
+                item.subCategory.toLowerCase().includes(query) ||
+                item.category.toLowerCase().includes(query) ||
+                item.source.toLowerCase().includes(query)
+            );
+            populateTable(filtered);
+        }
+
+        function exportCSV() {
+            let csv = 'Source,City,Purpose,Category,SubCategory,Price,Area,Beds,Baths,BuiltYear\n';
+            mockDatabase.forEach(i => {
+                csv += `"${i.source}","${i.city}","${i.purpose}","${i.category}","${i.subCategory}",${i.price},"${i.area}",${i.beds},${i.baths},"${i.builtYear}"\n`;
+            });
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.setAttribute('href', url);
+            a.setAttribute('download', 'pakistan_real_estate_power_bi_post_mortem.csv');
+            a.click();
+        }
+
+        function openDAXModal() {
+            document.getElementById('daxModal').classList.remove('hidden');
+        }
+
+        function closeDAXModal() {
+            document.getElementById('daxModal').classList.add('hidden');
+        }
+    </script>
+</body>
+</html>

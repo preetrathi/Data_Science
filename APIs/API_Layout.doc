@@ -1,0 +1,40 @@
+banking-api/
+├── app/
+│   ├── main.py                  # App factory, startup/shutdown events
+│   ├── core/
+│   │   ├── config.py             # Settings via pydantic-settings (env-based)
+│   │   ├── security.py           # JWT, password hashing, token logic
+│   │   ├── logging_config.py     # Structured logging setup
+│   │   ├── middleware.py         # Custom middleware (rate limit, correlation ID)
+│   │   └── exceptions.py         # Global exception handlers
+│   ├── api/
+│   │   ├── deps.py               # Shared dependencies (auth, db session)
+│   │   └── v1/
+│   │       ├── router.py         # Aggregates all v1 routes
+│   │       └── endpoints/
+│   │           ├── users.py
+│   │           ├── accounts.py
+│   │           └── transactions.py
+│   ├── models/                   # SQLAlchemy ORM models
+│   ├── schemas/                  # Pydantic request/response schemas
+│   ├── crud/                     # DB access layer (repository pattern)
+│   ├── services/                 # Business logic (kept OUT of endpoints)
+│   ├── db/
+│   │   ├── session.py
+│   │   └── base.py
+│   └── utils/
+├── tests/
+│   ├── unit/
+│   ├── integration/
+│   └── conftest.py
+├── alembic/                       # DB migrations — never manual schema changes
+├── scripts/                       # deploy, backup, cert-renewal scripts
+├── logs/
+├── .env.example                   # NEVER commit real .env
+├── requirements/
+│   ├── base.txt
+│   ├── dev.txt
+│   └── prod.txt
+├── Dockerfile
+├── docker-compose.yml
+└── pyproject.toml
